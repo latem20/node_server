@@ -1,0 +1,59 @@
+# ------------------------------------------------------------------
+# CONFIGURACIÓN ESENCIAL DE PYTHON
+# ------------------------------------------------------------------
+
+# Entorno virtual de Python (venv)
+# Esto es crucial, ya que Docker se encarga de crear el entorno
+venv/
+.venv/
+env/
+
+# Archivos de caché
+__pycache__/
+*.pyc
+
+# ------------------------------------------------------------------
+# DATOS GENERADOS POR LA APLICACIÓN (¡CRUCIAL PARA TU PROYECTO!)
+# ------------------------------------------------------------------
+
+# Directorio de la Base de Datos y configuraciones locales
+# (instance/ contiene sensors.db - el archivo de SQLite)
+instance/
+
+# Archivos de registro del servidor (logs/app.log)
+logs/
+
+# Archivos de base de datos específicos de SQLite
+*.sqlite
+*.sqlite3
+sensors.db
+
+# ------------------------------------------------------------------
+# ARCHIVOS SENSIBLES Y DE ENTORNO LOCAL
+# ------------------------------------------------------------------
+
+# Archivo de variables de entorno (Contiene claves secretas)
+.env
+
+# ------------------------------------------------------------------
+# CONFIGURACIONES Y CACHÉ DE HERRAMIENTAS
+# ------------------------------------------------------------------
+
+# Caché de pip
+.pip/
+
+# Archivos de macOS (si trabajas en un Mac, aunque uses Docker)
+.DS_Store
+
+# Caché de editores de código comunes (VS Code)
+.vscode/
+
+# ------------------------------------------------------------------
+# ARTEFACTOS DE DOCKER (Opcional, pero recomendable para limpiar)
+# ------------------------------------------------------------------
+
+# Ignora el archivo .dockerignore si lo llegas a crear
+# .dockerignore
+
+# Archivos de caché del buildkit de Docker
+.docker/

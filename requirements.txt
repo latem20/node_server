@@ -1,0 +1,10 @@
+# servidor-sensores/requirements.txt
+# Python dependencies
+Flask==3.0.3
+# ¡Añadir esta línea!
+Flask-SQLAlchemy==3.1.1 
+SQLAlchemy==2.0.29 
+python-dotenv==1.0.1
+gunicorn==22.0.0
+# Agrega pandas si lo usas para exportar a CSV
+pandas==2.2.2

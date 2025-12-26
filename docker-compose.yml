@@ -1,0 +1,36 @@
+services:
+  # Servicio principal: Tu servidor Flask
+  app_servidor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sensor_server_app
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/usr/src/app 
+      - ./instance:/usr/src/app/instance
+      - ./logs:/usr/src/app/logs
+      - ./backups:/usr/src/app/backups
+
+  # Servicio de Backup: Ejecuta el script cada 1 hora
+  backup_scheduler:
+    build:
+      context: .
+    container_name: sensor_backup_worker
+    restart: always
+    volumes:
+      - .:/usr/src/app
+      - ./instance:/usr/src/app/instance
+      - ./backups:/usr/src/app/backups
+    # Comando para ejecutar el backup y dormir 1 hora (3600 segundos) en un bucle infinito
+    entrypoint: >
+      sh -c "while true; do 
+      python -m app.db_tools; 
+      sleep 3600; 
+      done"
+
+      
