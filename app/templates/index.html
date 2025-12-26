@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DASHBOARD PROFESIONAL NODOS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Monitor de Sensores en Tiempo Real</h1>
+            <div class="header-right">
+                <button id="pause-btn" onclick="togglePause()" class="btn-pause">
+                    <span id="pause-icon">⏸️</span> <span id="pause-text">Pausar</span>
+                </button>
+                <div id="status-indicator" class="status-online">Sistema Conectado</div>
+            </div>
+        </header>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="header-left">
+                    <h3>📈 Análisis por Nodo</h3>
+                    <select id="sensor-selector" onchange="updateChartFromStoredData()">
+                        <option value="">Selecciona un sensor...</option>
+                    </select>
+                </div>
+                
+                <div class="chart-controls">
+                    <div class="control-group">
+                        <label>&nbsp;</label> <button onclick="exportToCSV()" class="btn-export">
+                            📥 Exportar CSV
+                        </button>
+                    </div>
+                    <div class="control-group">
+                        <label>Escala Y:</label>
+                        <select id="scale-type" onchange="updateChartFromStoredData()">
+                            <option value="linear">Lineal</option>
+                            <option value="logarithmic">Logarítmica</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Mostrar:</label>
+                        <select id="data-limit" onchange="updateChartFromStoredData()">
+                            <option value="10">Últimos 10</option>
+                            <option value="20">Últimos 20</option>
+                            <option value="50" selected>Últimos 50</option>
+                            <option value="100">Últimos 100</option>
+                            <option value="0">Todo</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Mín Y:</label>
+                        <input type="number" id="y-min" placeholder="Auto" onchange="updateChartFromStoredData()">
+                    </div>
+                    <div class="control-group">
+                        <label>Máx Y:</label>
+                        <input type="number" id="y-max" placeholder="Auto" onchange="updateChartFromStoredData()">
+                    </div>
+                </div>
+            </div>
+            <canvas id="sensorChart"></canvas>
+        </div>
+
+        <div class="cards-grid" id="latest-cards"></div>
+
+        <section class="table-section">
+            <h3>📜 Historial de Lecturas</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha (Local)</th>
+                        <th>ID Sensor</th>
+                        <th>Lectura Detallada</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </section>
+    </div>
+
+    <script>
+        let myChart;
+        let lastFetchedData = [];
+        let isPaused = false; // Control de pausa
+
+        const CONFIG = {
+            limites: {
+                "temp_ds18b20": 30,
+                "temp_dht11": 30,
+                "humedad": 80,
+                "temp_interna": 60
+            },
+            valor_error: -999
+        };
+
+        function initChart() {
+            const ctx = document.getElementById('sensorChart').getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: false, type: 'linear' } }
+                }
+            });
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            const btn = document.getElementById('pause-btn');
+            const icon = document.getElementById('pause-icon');
+            const text = document.getElementById('pause-text');
+            const status = document.getElementById('status-indicator');
+
+            if (isPaused) {
+                btn.classList.add('paused');
+                icon.innerText = '▶️'; text.innerText = 'Reanudar';
+                status.innerText = 'Lectura Pausada';
+                status.className = 'status-warning-bg'; // Necesitarás este estilo en CSS
+            } else {
+                btn.classList.remove('paused');
+                icon.innerText = '⏸️'; text.innerText = 'Pausar';
+                status.innerText = 'Sistema Conectado';
+                status.className = 'status-online';
+                fetchSensorData();
+            }
+        }
+
+        function getAlertClass(key, value) {
+            if (value === CONFIG.valor_error || value === null || isNaN(value)) return 'status-error-lectura';
+            if (CONFIG.limites[key] && value > CONFIG.limites[key]) return 'status-critico';
+            return 'status-normal';
+        }
+
+        async function fetchSensorData() {
+            if (isPaused) return; // Si está pausado, no pedimos datos
+            try {
+                const response = await fetch('/api/readings');
+                const data = await response.json();
+                lastFetchedData = data;
+                updateSelector(data);
+                updateCards(data);
+                updateTable(data);
+                updateChart(data); 
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        function updateSelector(data) {
+            const selector = document.getElementById('sensor-selector');
+            const sensors = [...new Set(data.map(r => r.sensor_id))];
+            sensors.forEach(id => {
+                if (![...selector.options].some(o => o.value === id)) {
+                    let opt = document.createElement('option');
+                    opt.value = id; opt.innerHTML = id;
+                    selector.appendChild(opt);
+                }
+            });
+        }
+
+        function updateChart(allData) {
+            const selectedSensor = document.getElementById('sensor-selector').value;
+            if (!selectedSensor || !allData || allData.length === 0) return;
+
+            const scaleType = document.getElementById('scale-type').value;
+            const yMin = document.getElementById('y-min').value;
+            const yMax = document.getElementById('y-max').value;
+            const dataLimit = parseInt(document.getElementById('data-limit').value);
+
+            let filteredData = allData.filter(r => r.sensor_id === selectedSensor);
+            if (dataLimit > 0) filteredData = filteredData.slice(0, dataLimit);
+            
+            filteredData.reverse();
+            if (filteredData.length === 0) return;
+
+            const labels = filteredData.map(r => r.timestamp.split(' ')[1]);
+            const keys = Object.keys(filteredData[0].payload);
+            
+            const datasets = keys.map((key, index) => {
+                const colors = ['#3498db', '#e74c3c', '#27ae60', '#f1c40f'];
+                return {
+                    label: key,
+                    data: filteredData.map(r => {
+                        let val = r.payload[key];
+                        return (scaleType === 'logarithmic' && val <= 0) ? 0.1 : val;
+                    }),
+                    borderColor: colors[index % colors.length],
+                    backgroundColor: colors[index % colors.length] + '22',
+                    fill: true,
+                    tension: 0.3
+                };
+            });
+
+            myChart.options.scales.y = {
+                type: scaleType,
+                min: yMin !== "" ? parseFloat(yMin) : undefined,
+                max: yMax !== "" ? parseFloat(yMax) : undefined,
+                ticks: { callback: (value) => Number(value).toLocaleString() }
+            };
+
+            myChart.data.labels = labels;
+            myChart.data.datasets = datasets;
+            myChart.update('none'); 
+        }
+
+        function updateChartFromStoredData() {
+            updateChart(lastFetchedData);
+        }
+
+        function updateCards(data) {
+            const cardsContainer = document.getElementById('latest-cards');
+            const latestPerSensor = {};
+            // El primer elemento es el más reciente (descending order)
+            data.forEach(r => { if (!latestPerSensor[r.sensor_id]) latestPerSensor[r.sensor_id] = r; });
+
+            let cardsHtml = '';
+            for (const sensorId in latestPerSensor) {
+                const r = latestPerSensor[sensorId];
+                cardsHtml += `
+                    <div class="card">
+                        <h4>📍 ${sensorId}</h4>
+                        <div class="card-values">
+                            ${Object.entries(r.payload).map(([k, v]) => `
+                                <div class="val-group">
+                                    <span class="label">${k}</span>
+                                    <span class="value ${getAlertClass(k, v)}">${v === CONFIG.valor_error ? 'ERROR' : v}</span>
+                                </div>`).join('')}
+                        </div>
+                        <small>Actualizado: ${r.timestamp.split(' ')[1]}</small>
+                    </div>`;
+            }
+            cardsContainer.innerHTML = cardsHtml;
+        }
+
+        function updateTable(data) {
+            const tableBody = document.getElementById('table-body');
+            let tableHtml = '';
+            
+            // --- LÍNEA CLAVE: Limitamos a los últimos 30 registros ---
+            const limitedData = data.slice(0, 30); 
+
+            limitedData.forEach(r => {
+                let items = Object.entries(r.payload)
+                    .map(([k, v]) => `<span class="badge ${getAlertClass(k, v)}">${k}: ${v}</span>`)
+                    .join(' ');
+                    
+                tableHtml += `
+                    <tr>
+                        <td>${r.timestamp}</td>
+                        <td><strong>${r.sensor_id}</strong></td>
+                        <td>${items}</td>
+                    </tr>`;
+            });
+            tableBody.innerHTML = tableHtml;
+        }
+
+        initChart();
+        fetchSensorData();
+        setInterval(fetchSensorData, 3000);
+
+        function exportToCSV() {
+            const selectedSensor = document.getElementById('sensor-selector').value;
+            if (!selectedSensor || lastFetchedData.length === 0) {
+                alert("Por favor, selecciona un sensor para exportar sus datos.");
+                return;
+            }
+
+            // 1. Filtrar los datos según el sensor seleccionado y el límite actual
+            const dataLimit = parseInt(document.getElementById('data-limit').value);
+            let filteredData = lastFetchedData.filter(r => r.sensor_id === selectedSensor);
+            if (dataLimit > 0) filteredData = filteredData.slice(0, dataLimit);
+
+            if (filteredData.length === 0) return;
+
+            // 2. Preparar las cabeceras del CSV
+            const keys = Object.keys(filteredData[0].payload);
+            const headers = ["Timestamp", "Sensor_ID", ...keys];
+            
+            // 3. Construir las filas
+            const rows = filteredData.map(r => [
+                r.timestamp,
+                r.sensor_id,
+                ...keys.map(k => r.payload[k])
+            ]);
+
+            // 4. Crear el contenido del archivo
+            let csvContent = "data:text/csv;charset=utf-8," 
+                + headers.join(",") + "\n" 
+                + rows.map(e => e.join(",")).join("\n");
+
+            // 5. Crear link de descarga invisible y activarlo
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `reporte_${selectedSensor}_${new Date().getTime()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>

@@ -57,3 +57,23 @@ sensors.db
 
 # Archivos de caché del buildkit de Docker
 .docker/
+
+# ------------------------------------------------------------------
+# ARCHIVOS DE RESPALDO Y TEMPORALES
+# ------------------------------------------------------------------
+
+# Copias de seguridad de la base de datos
+*.bak
+*.sql
+*.old
+*_backup.db
+
+# Archivos comprimidos de respaldo
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Carpetas de backups manuales
+backups/
+temp/
