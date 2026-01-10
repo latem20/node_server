@@ -38,30 +38,32 @@ if ($portCheck.TcpTestSucceeded) {
     Write-Host " ERROR (Puerto cerrado o bloqueado)" -ForegroundColor Red
 }
 
-# 4. Validar API KEY
-Write-Host "[4] Validando API KEY del archivo .env..." -NoNewline
+# [ ... Partes 1, 2 y 3 se mantienen igual ... ]
+
+# 4. Validar API KEY y Sincronización
+Write-Host "[4] Validando API KEY y envío de datos..." -NoNewline
 if (Test-Path ".env") {
-    $envFile = Get-Content ".env" | Select-String "SENSOR_API_KEY="
-    $apiKey = ($envFile -split "=")[1].Trim()
-    
-    # Prueba de autenticación real
+    # Extraer la API KEY del .env
+    $envContent = Get-Content ".env" | ConvertFrom-StringData
+    $apiKey = $envContent.SENSOR_API_KEY
+
+    # Payload de prueba compatible con tu nuevo routes.py
+    $testBody = @{
+        sensor_id = "TEST_NODE"
+        t_int = 25.5
+        light = 500
+    } | ConvertTo-Json
+
     try {
-        $response = Invoke-WebRequest -Uri "http://localhost:8000/api/sensor-data" `
+        $response = Invoke-RestMethod -Uri "http://localhost:8000/api/sensor-data" `
                     -Method Post -Headers @{"X-API-KEY"="$apiKey"} `
-                    -ContentType "application/json" -Body '{"test":1}' `
+                    -ContentType "application/json" -Body $testBody `
                     -ErrorAction Stop
-        Write-Host " OK (Autenticación exitosa)" -ForegroundColor Green
+        
+        Write-Host " OK (Dato guardado y en cola de sincronización)" -ForegroundColor Green
     } catch {
-        if ($_.Exception.Response.StatusCode -eq "Unauthorized") {
-            Write-Host " ERROR (Clave .env no coincide con el Servidor)" -ForegroundColor Red
-        } else {
-            Write-Host " ERROR (Servidor no respondió correctamente)" -ForegroundColor Red
-        }
+        Write-Host " ERROR ($($_.Exception.Message))" -ForegroundColor Red
     }
 } else {
     Write-Host " ERROR (No se encontró archivo .env)" -ForegroundColor Red
 }
-
-Write-Host "`n===============================================" -ForegroundColor Cyan
-Write-Host "              FIN DEL DIAGNÓSTICO" -ForegroundColor Cyan
-Write-Host "===============================================" -ForegroundColor Cyan

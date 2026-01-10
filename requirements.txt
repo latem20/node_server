@@ -1,10 +1,21 @@
 # servidor-sensores/requirements.txt
 # Python dependencies
+
+# Servidor Flask
 Flask==3.0.3
-# ¡Añadir esta línea!
+
+# Base de Datos Local (SQLAlchemy)
 Flask-SQLAlchemy==3.1.1 
 SQLAlchemy==2.0.29 
+
+# Comunicación con la Nube (¡INDISPENSABLE PARA SUPABASE!)
+requests==2.32.3
+
+# Configuración y Variables de Entorno
 python-dotenv==1.0.1
+
+# Servidor de Producción (Necesario para Render)
 gunicorn==22.0.0
-# Agrega pandas si lo usas para exportar a CSV
+
+# Procesamiento de Datos
 pandas==2.2.2

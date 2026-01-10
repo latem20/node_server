@@ -31,8 +31,8 @@
                 
                 <div class="chart-controls">
                     <div class="control-group">
-                        <label>&nbsp;</label> <button onclick="exportToCSV()" class="btn-export">
-                            📥 Exportar CSV
+                        <button onclick="exportToCSV()" class="btn-export">
+                            🔒 <span>Reporte Seguro</span>
                         </button>
                     </div>
                     <div class="control-group">
@@ -265,6 +265,14 @@
         setInterval(fetchSensorData, 3000);
 
         function exportToCSV() {
+
+            const CLAVE_EXPORTACION = "anandanetwork"; // Cambia esto por tu PIN secreto
+            const inputClave = prompt("⚠️ Acceso Restringido: Ingresa el PIN para descargar los datos:");
+            if (inputClave !== CLAVE_EXPORTACION) {
+                alert("❌ PIN incorrecto. Acción cancelada.");
+                return;
+            }
+
             const selectedSensor = document.getElementById('sensor-selector').value;
             if (!selectedSensor || lastFetchedData.length === 0) {
                 alert("Por favor, selecciona un sensor para exportar sus datos.");

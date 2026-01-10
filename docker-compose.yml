@@ -26,11 +26,13 @@ services:
       - .:/usr/src/app
       - ./instance:/usr/src/app/instance
       - ./backups:/usr/src/app/backups
-    # Comando para ejecutar el backup y dormir 1 hora (3600 segundos) en un bucle infinito
+    # Se eliminó la línea repetida de entrypoint
     entrypoint: >
       sh -c "while true; do 
+      echo '--- Iniciando Tareas de Mantenimiento ---';
       python -m app.db_tools; 
+      python sync_task.py; 
+      echo '--- Tareas Completadas. Durmiendo 1 hora ---';
       sleep 3600; 
       done"
-
       

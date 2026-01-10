@@ -10,6 +10,8 @@ class SensorReading(db.Model):
     payload = db.Column(db.JSON, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
 
+    synced = db.Column(db.Boolean, default=False)
+
     def to_dict(self):
         return {
             "id": self.id,

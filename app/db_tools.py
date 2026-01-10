@@ -3,7 +3,7 @@ import shutil
 import time
 from datetime import datetime
 
-def clean_old_backups(backup_dir, days_to_keep=7):
+def clean_old_backups(backup_dir, days_to_keep=3):
     """Borra archivos que superen los 7 días de antigüedad."""
     now = time.time()
     cutoff = now - (days_to_keep * 86400)
