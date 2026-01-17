@@ -4,6 +4,7 @@ from .models import SensorReading
 import os
 import requests
 from datetime import datetime
+import pytz
 
 bp_api = Blueprint('api', __name__, url_prefix='/api')
 bp_dashboard = Blueprint('dashboard', __name__)
@@ -95,23 +96,77 @@ def sincronizar_pendientes():
             break
 
 # --- RUTA ÚNICA PARA OBTENER DATOS ---
+# ... (Tus importaciones y ruta /sensor-data están perfectas)
+
 @bp_api.route('/readings')
 def get_readings():
-    """Retorna las últimas 200 lecturas para alimentar la gráfica y tabla."""
-    # Aumentamos el límite a 200 para que el selector 'Últimos 50/100' funcione
-    readings = SensorReading.query.order_by(SensorReading.timestamp.desc()).limit(200).all()
-    
-    output = []
-    for r in readings:
-        output.append({
-            "timestamp": r.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-            "sensor_id": r.sensor_id,
-            "payload": r.payload 
-        })
-    return jsonify(output)
+    is_render = os.getenv('RENDER') is not None
+    ecuador_tz = pytz.timezone('America/Guayaquil') # Definir aquí para usar en ambos casos
+
+    if is_render:
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_KEY")
+        endpoint = f"{url}/rest/v1/lecturas_sensores"
+        headers = {"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+        
+        try:
+            params = {"select": "*", "order": "created_at.desc", "limit": "100"}
+            response = requests.get(endpoint, headers=headers, params=params, timeout=5)
+            supabase_data = response.json()
+
+            output = []
+            for r in supabase_data:
+                # --- CORRECCIÓN DE HORA PARA SUPABASE ---
+                # Convertimos el string '2024-05-20T15:00:00+00:00' a objeto datetime
+                raw_date = r.get('created_at')
+                dt_utc = datetime.fromisoformat(raw_date.replace('Z', '+00:00'))
+                dt_ecuador = dt_utc.astimezone(ecuador_tz)
+
+                output.append({
+                    "timestamp": dt_ecuador.strftime('%Y-%m-%d %H:%M:%S'), 
+                    "sensor_id": r.get('sensor_id'),
+                    "payload": {
+                        "t_int": r.get('temp_internal'),
+                        "t_ds18": r.get('temp_ds18b20'),
+                        "t_dht": r.get('temp_dht11'),
+                        "h_dht": r.get('hum_dht11'),
+                        "co": r.get('ppmco_mq9'),
+                        "co2": r.get('ppmco2_mq135'),
+                        "light": r.get('light_lvl'),
+                        "pres": r.get('hpa_bmp180'),
+                        "t_bmp": r.get('temp_bmp180'),
+                        "alt": r.get('alt_bmp180'),
+                        "h_gnd": r.get('hum_gnd')
+                    }
+                })
+            return jsonify(output)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    else:
+        # (Tu lógica local está perfecta, solo asegúrate de que readings tenga datos)
+        readings = SensorReading.query.order_by(SensorReading.timestamp.desc()).limit(200).all()
+        output = []
+        for r in readings:
+            dt_utc = r.timestamp.replace(tzinfo=pytz.utc) if r.timestamp.tzinfo is None else r.timestamp
+            dt_ecuador = dt_utc.astimezone(ecuador_tz)
+            output.append({
+                "timestamp": dt_ecuador.strftime('%Y-%m-%d %H:%M:%S'),
+                "sensor_id": r.sensor_id,
+                "payload": r.payload 
+            })
+        return jsonify(output)
 
 @bp_dashboard.route('/')
 def index():
-    # Carga inicial para el renderizado del template
+    # Aplicar también zona horaria a la carga inicial del HTML
     readings = SensorReading.query.order_by(SensorReading.timestamp.desc()).limit(50).all()
+    ecuador_tz = pytz.timezone('America/Guayaquil')
+    
+    for r in readings:
+        if r.timestamp.tzinfo is None:
+            r.timestamp = r.timestamp.replace(tzinfo=pytz.utc).astimezone(ecuador_tz)
+        else:
+            r.timestamp = r.timestamp.astimezone(ecuador_tz)
+            
     return render_template('index.html', readings=readings)

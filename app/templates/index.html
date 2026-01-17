@@ -87,12 +87,14 @@
         let lastFetchedData = [];
         let isPaused = false; // Control de pausa
 
+        // Ajusta estos nombres para que coincidan con las llaves de tu payload en Supabase
         const CONFIG = {
             limites: {
-                "temp_ds18b20": 30,
-                "temp_dht11": 30,
-                "humedad": 80,
-                "temp_interna": 60
+                "t_ds18": 30,    // Temperatura DS18B20
+                "t_dht": 32,     // Temperatura DHT11
+                "h_dht": 85,     // Humedad DHT11
+                "t_int": 55,     // Temperatura Interna ESP32
+                "co2": 1000      // Ejemplo de límite para CO2
             },
             valor_error: -999
         };
@@ -183,17 +185,36 @@
             const keys = Object.keys(filteredData[0].payload);
             
             const datasets = keys.map((key, index) => {
-                const colors = ['#3498db', '#e74c3c', '#27ae60', '#f1c40f'];
+                // Paleta de 10 colores profesionales y distintos
+                const palette = [
+                    '#3498db', // Azul (Temperatura)
+                    '#e74c3c', // Rojo (CO2)
+                    '#2ecc71', // Verde (Humedad)
+                    '#f1c40f', // Amarillo (Luz)
+                    '#9b59b6', // Púrpura
+                    '#e67e22', // Naranja
+                    '#1abc9c', // Turquesa
+                    '#34495e', // Gris Azulado
+                    '#d35400', // Calabaza
+                    '#27ae60'  // Verde Esmeralda
+                ];
+
+                // Asignamos el color basado en el índice de la llave
+                const color = palette[index] || `#${Math.floor(Math.random()*16777215).toString(16)}`; // Color aleatorio si sobran llaves
+
                 return {
-                    label: key,
+                    label: key.toUpperCase(), // Nombre en mayúsculas para mejor estética
                     data: filteredData.map(r => {
                         let val = r.payload[key];
                         return (scaleType === 'logarithmic' && val <= 0) ? 0.1 : val;
                     }),
-                    borderColor: colors[index % colors.length],
-                    backgroundColor: colors[index % colors.length] + '22',
+                    borderColor: color,
+                    backgroundColor: color + '15', // Transparencia muy ligera (15 en hex)
                     fill: true,
-                    tension: 0.3
+                    tension: 0.4, // Curva más suave para las líneas
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 6
                 };
             });
 
