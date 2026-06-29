@@ -330,3 +330,106 @@ table thead th {
     background-color: #2d3748;
     transform: scale(1.02);
 }
+
+.header-meta {
+    margin: 8px 0 0;
+    color: #666;
+    font-size: 0.95rem;
+}
+
+.header-meta a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.header-meta a:hover {
+    text-decoration: underline;
+}
+
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--card-bg);
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+}
+
+.login-subtitle {
+    color: #666;
+    margin-bottom: 24px;
+}
+
+.login-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.login-form input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    margin-bottom: 16px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.flash {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.flash-error {
+    background: #fdecea;
+    color: #c0392b;
+}
+
+.flash-success {
+    background: #eafaf1;
+    color: #1e8449;
+}
+
+.flash-warning {
+    background: #fef9e7;
+    color: #b7950b;
+}
+
+.btn-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 12px;
+}
+
+.admin-grid {
+    display: grid;
+    gap: 24px;
+}
+
+.admin-panel {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+}

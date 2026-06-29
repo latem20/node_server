@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración — Monitoreo IoT</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>Panel de administración</h1>
+                <p class="header-meta">Gestión de usuarios, zonas, nodos y alertas.</p>
+            </div>
+            <div class="header-right">
+                <a href="{{ url_for('dashboard.index') }}" class="btn-link">Dashboard</a>
+                <a href="{{ url_for('auth.logout') }}" class="btn-link">Salir</a>
+            </div>
+        </header>
+
+        <section class="admin-grid">
+            <div class="admin-panel">
+                <h3>Usuarios</h3>
+                <table>
+                    <thead>
+                        <tr><th>Email</th><th>Rol</th><th>Activo</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.role }}</td>
+                            <td>{{ 'Sí' if user.active else 'No' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="admin-panel">
+                <h3>Zonas / huertos</h3>
+                <table>
+                    <thead>
+                        <tr><th>Nombre</th><th>Ubicación</th><th>Activo</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for zone in zones %}
+                        <tr>
+                            <td>{{ zone.name }}</td>
+                            <td>{{ zone.location or '—' }}</td>
+                            <td>{{ 'Sí' if zone.active else 'No' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="admin-panel">
+                <h3>Nodos ESP32</h3>
+                <table>
+                    <thead>
+                        <tr><th>Código</th><th>Etiqueta</th><th>Zona</th><th>Última señal</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for node in nodes %}
+                        <tr>
+                            <td>{{ node.node_code }}</td>
+                            <td>{{ node.label or '—' }}</td>
+                            <td>{{ node.zone.name if node.zone else '—' }}</td>
+                            <td>{{ node.last_seen.strftime('%Y-%m-%d %H:%M') if node.last_seen else '—' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="admin-panel">
+                <h3>Reglas de alerta</h3>
+                <table>
+                    <thead>
+                        <tr><th>Variable</th><th>Condición</th><th>Severidad</th><th>Mensaje</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for rule in rules %}
+                        <tr>
+                            <td>{{ rule.variable }}</td>
+                            <td>{{ rule.operator }} {{ rule.threshold }}</td>
+                            <td>{{ rule.severity }}</td>
+                            <td>{{ rule.message or '—' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="admin-panel">
+                <h3>Alertas recientes</h3>
+                <table>
+                    <thead>
+                        <tr><th>Fecha</th><th>Nodo</th><th>Valor</th><th>Reconocida</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for alert in alerts %}
+                        <tr>
+                            <td>{{ alert.triggered_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ alert.node.node_code if alert.node else '—' }}</td>
+                            <td>{{ alert.value }}</td>
+                            <td>{{ 'Sí' if alert.acknowledged else 'No' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</body>
+</html>

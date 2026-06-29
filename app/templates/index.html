@@ -11,7 +11,16 @@
 <body>
     <div class="container">
         <header>
-            <h1>📊 Monitor de Sensores en Tiempo Real</h1>
+            <div>
+                <h1>📊 Monitor de Sensores en Tiempo Real</h1>
+                <p class="header-meta">
+                    {{ current_user.full_name or current_user.email }}
+                    {% if current_user.is_admin %}
+                        · <a href="{{ url_for('admin.index') }}">Administración</a>
+                    {% endif %}
+                    · <a href="{{ url_for('auth.logout') }}">Salir</a>
+                </p>
+            </div>
             <div class="header-right">
                 <button id="pause-btn" onclick="togglePause()" class="btn-pause">
                     <span id="pause-icon">⏸️</span> <span id="pause-text">Pausar</span>

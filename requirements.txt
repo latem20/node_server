@@ -3,10 +3,11 @@
 
 # Servidor Flask
 Flask==3.0.3
+Flask-Login==0.6.3
 
 # Base de Datos Local (SQLAlchemy)
 Flask-SQLAlchemy==3.1.1 
-SQLAlchemy==2.0.29 
+SQLAlchemy>=2.0.40 
 
 # Comunicación con la Nube (¡INDISPENSABLE PARA SUPABASE!)
 requests==2.32.3
@@ -14,11 +15,11 @@ requests==2.32.3
 # Configuración y Variables de Entorno
 python-dotenv==1.0.1
 
-# Servidor de Producción (Necesario para Render)
+# Servidor de Producción (Linux/RPi; en Windows usar run.py)
 gunicorn==22.0.0
-
-# Procesamiento de Datos
-pandas==2.2.2
 
 # Manejo de Zonas Horarias (Ecuador)
 pytz==2024.1
+
+# Nota: pandas se omitió — no se usa en el código y en Windows/Python 3.14
+# requiere compilar con Visual Studio. Añadir solo si implementas reportes con pandas.
